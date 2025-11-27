@@ -10,7 +10,12 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-key-for-tes
 jwt = JWTManager(app)
 # Configuration
 if os.environ.get('RENDER'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    database_url = os.getenv('DATABASE_URL', '')
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    if not database_url:
+        database_url = 'sqlite:///local.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///development.db'
     print("⚠️ Using SQLite for local development (PostgreSQL will be used in production)")
