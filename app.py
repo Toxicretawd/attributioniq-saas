@@ -159,7 +159,14 @@ def get_attribution_report():
     
     return jsonify(report), 200
 if __name__ == '__main__':
-    # Create tables if running locally
     with app.app_context():
+        print("✨ Creating database tables...")
         db.create_all()
-    app.run(debug=True)
+        print("✅ Database tables created successfully")
+        app.run(debug=True)
+else:
+    # This runs when deployed to Render (not via python app.py)
+    with app.app_context():
+        print("✨ Creating database tables for production...")
+        db.create_all()
+        print("✅ Database tables created successfully")
