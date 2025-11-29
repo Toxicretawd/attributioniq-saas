@@ -62,7 +62,24 @@ def register():
         'access_token': access_token,  # This is what you should use for auth
         'message': 'Account created! Use access_token for authentication'
     }), 201
-
+@app.route('/api/v1/auth/login', methods=['POST'])
+def login():
+    data = request.json
+    if not data or 'tenant_id' not in data or 'api_key' not in data:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Verify tenant exists and API key matches
+    tenant = Tenant.query.filter_by(id=data['tenant_id'], api_key=data['api_key']).first()
+    if not tenant:
+        return jsonify({"error": "Invalid credentials"}), 401
+    
+    # Generate access token
+    access_token = create_access_token(identity=tenant.id)
+    
+    return jsonify({
+        'access_token': access_token,
+        'tenant_id': tenant.id
+    }), 200
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "healthy"}), 200
@@ -158,15 +175,7 @@ def get_attribution_report():
         })
     
     return jsonify(report), 200
-@app.route('/tracker.js')
-def serve_tracker():
-    """Serve the tracking script to client websites"""
-    return send_from_directory('static', 'tracker.js', mimetype='application/javascript')
 
-@app.route('/dashboard')
-def dashboard():
-    """Serve the dashboard UI"""
-    return send_file('dashboard.html')
 if __name__ == '__main__':
     with app.app_context():
         print("✨ Creating database tables...")

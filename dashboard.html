@@ -39,9 +39,76 @@
 
   <script>
     // Get tenant ID and API key from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const tenantId = urlParams.get('tenant_id');
-    const apiKey = urlParams.get('api_key');
+const urlParams = new URLSearchParams(window.location.search);
+const tenantId = urlParams.get('tenant_id');
+const apiKey = urlParams.get('api_key');
+const accessToken = urlParams.get('access_token');
+
+// If we don't have an access token, show login screen
+if (!accessToken) {
+  document.getElementById('reportData').innerHTML = `
+    <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+      <h2>AttributionIQ Login</h2>
+      <p>Enter your API key to view your dashboard</p>
+      
+      <form id="loginForm">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
+          <input type="text" id="tenantIdInput" value="\${tenantId || ''}" 
+                 style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">API Key</label>
+          <input type="password" id="apiKeyInput" value="\${apiKey || ''}" 
+                 style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <button type="submit" 
+                style="background: #007bff; color: white; border: none; padding: 10px 15px; 
+                       border-radius: 4px; cursor: pointer; width: 100%;">
+          Login
+        </button>
+      </form>
+    </div>
+  `;
+
+  // Handle login form submission
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const tenantId = document.getElementById('tenantIdInput').value;
+    const apiKey = document.getElementById('apiKeyInput').value;
+    
+    try {
+      // First authenticate to get access token
+      const authResponse = await fetch(
+        'https://attributioniq-saas.onrender.com/api/v1/auth/login', 
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tenant_id: tenantId, api_key: apiKey })
+        }
+      );
+      
+      if (!authResponse.ok) {
+        throw new Error('Invalid credentials');
+      }
+      
+      const authData = await authResponse.json();
+      const newUrl = `?tenant_id=${tenantId}&access_token=${authData.access_token}`;
+      window.history.pushState({}, '', newUrl);
+      location.reload();
+      
+    } catch (error) {
+      alert('Login failed: ' + error.message);
+    }
+  });
+  
+  // Stop further execution
+  throw new Error("Authentication required");
+}
     
     if (!tenantId || !apiKey) {
       document.getElementById('reportData').innerHTML = `
@@ -60,7 +127,7 @@
           `https://attributioniq-saas.onrender.com/api/v1/report/attribution?days=30`,
           {
             headers: {
-              'Authorization': `Bearer \${apiKey}`
+              'Authorization': `Bearer \${accessToken}`
             }
           }
         );
