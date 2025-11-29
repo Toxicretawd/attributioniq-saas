@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token
 import os
@@ -158,6 +158,15 @@ def get_attribution_report():
         })
     
     return jsonify(report), 200
+@app.route('/tracker.js')
+def serve_tracker():
+    """Serve the tracking script to client websites"""
+    return send_from_directory('static', 'tracker.js', mimetype='application/javascript')
+
+@app.route('/dashboard')
+def dashboard():
+    """Serve the dashboard UI"""
+    return send_file('dashboard.html')
 if __name__ == '__main__':
     with app.app_context():
         print("✨ Creating database tables...")

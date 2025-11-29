@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AttributionIQ Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    canvas { max-height: 300px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+    th { background-color: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>AttributionIQ Dashboard</h1>
+  
+  <div class="card">
+    <h2>Marketing Channel Performance</h2>
+    <div class="grid">
+      <div>
+        <h3>Conversions by Channel</h3>
+        <canvas id="channelChart"></canvas>
+      </div>
+      <div>
+        <h3>Revenue by Channel</h3>
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Attribution Report (Last 30 Days)</h2>
+    <div id="reportData">
+      <p>Loading your attribution data...</p>
+    </div>
+  </div>
+
+  <script>
+    // Get tenant ID and API key from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const tenantId = urlParams.get('tenant_id');
+    const apiKey = urlParams.get('api_key');
+    
+    if (!tenantId || !apiKey) {
+      document.getElementById('reportData').innerHTML = `
+        <div style="background: #fff8f8; border: 1px solid #ffcccc; padding: 15px; border-radius: 4px;">
+          <h3>⚠️ Missing Credentials</h3>
+          <p>This dashboard requires your tenant ID and API key.</p>
+          <p>Example URL: <code>https://yourdomain.com/dashboard?tenant_id=YOUR_ID&api_key=YOUR_KEY</code></p>
+        </div>
+      `;
+      throw new Error("Missing tenant_id or api_key");
+    }
+    
+    async function fetchReport() {
+      try {
+        const response = await fetch(
+          `https://attributioniq-saas.onrender.com/api/v1/report/attribution?days=30`,
+          {
+            headers: {
+              'Authorization': `Bearer \${apiKey}`
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to fetch report');
+        }
+        
+        const report = await response.json();
+        displayReport(report);
+      } catch (error) {
+        document.getElementById('reportData').innerHTML = 
+          `<p style="color: red">Error: \${error.message}</p>`;
+      }
+    }
+    
+    function displayReport(report) {
+      // Display summary metrics
+      let html = `
+        <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
+        <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
+        <h3>Channel Breakdown</h3>
+        <table>
+          <tr>
+            <th>Channel</th>
+            <th>Conversions</th>
+            <th>Revenue</th>
+            <th>% of Total</th>
+          </tr>
+      `;
+      
+      report.channels.forEach(channel => {
+        html += `
+          <tr>
+            <td>\${channel.channel}</td>
+            <td>\${channel.conversions}</td>
+            <td>$\${channel.value.toFixed(2)}</td>
+            <td>\${channel.percentage}%</td>
+          </tr>
+        `;
+      });
+      
+      html += `</table>`;
+      document.getElementById('reportData').innerHTML = html;
+      
+      // Create charts
+      renderChannelChart(report);
+      renderRevenueChart(report);
+    }
+    
+    function renderChannelChart(report) {
+      const ctx = document.getElementById('channelChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: report.channels.map(c => c.channel),
+          datasets: [{
+            label: 'Conversions',
+            data: report.channels.map(c => c.conversions),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function renderRevenueChart(report) {
+      const ctx = document.getElementById('revenueChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: report.channels.map(c => c.channel),
+          datasets: [{
+            data: report.channels.map(c => c.value),
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.5)',
+              'rgba(54, 162, 235, 0.5)',
+              'rgba(255, 206, 86, 0.5)',
+              'rgba(75, 192, 192, 0.5)',
+              'rgba(153, 102, 255, 0.5)'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+    }
+    
+    // Initialize
+    fetchReport();
+  </script>
+</body>
+</html>
