@@ -175,6 +175,15 @@ def get_attribution_report():
         })
     
     return jsonify(report), 200
+@app.route('/tracker.js')
+def serve_tracker():
+    """Serve the tracking script to client websites"""
+    return send_from_directory('static', 'tracker.js', mimetype='application/javascript')
+
+@app.route('/dashboard')
+def dashboard():
+    """Serve the dashboard UI"""
+    return send_file('dashboard.html')
 
 if __name__ == '__main__':
     with app.app_context():
