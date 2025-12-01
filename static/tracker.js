@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Construct the full URL for the fetch request
-    const fetchUrl = `\${apiEndpoint}/api/v1/track`; // Make sure this line is correct
+    const fetchUrl = `${apiEndpoint}/api/v1/track`; // Make sure this line is correct
 
     fetch(fetchUrl, {
         method: 'POST',
