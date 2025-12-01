@@ -30,18 +30,25 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   
   function trackEvent(data) {
-    fetch('https://attributioniq-saas.onrender.com/api/v1/track', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey
-      },
-      body: JSON.stringify(data)
+    // Add the credentials to the data payload
+    const payload = {
+        ...data, // Includes customer_id, channel, etc.
+        tenant_id: tenantId,
+        api_key: apiKey
+    };
+
+    // Use a relative URL so it works on localhost and production
+    fetch('/api/v1/track', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
     })
     .catch(error => {
-      console.error('AttributionIQ tracking error:', error);
+        console.error('AttributionIQ tracking error:', error);
     });
-  }
+}
   
   function getReferralChannel() {
     const ref = document.referrer;

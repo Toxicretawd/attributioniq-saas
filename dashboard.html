@@ -97,9 +97,9 @@ if (!accessToken) {
       }
       
       const authData = await authResponse.json();
-      const newUrl = `?tenant_id=${tenantId}&access_token=${authData.access_token}`;
-      window.history.pushState({}, '', newUrl);
-      location.reload();
+    // Corrected login logic
+    const newUrl = `${window.location.pathname}?tenant_id=${tenantId}&access_token=\${authData.access_token}`;
+    window.location.href = newUrl; // Use href for a full redirect
       
     } catch (error) {
       alert('Login failed: ' + error.message);

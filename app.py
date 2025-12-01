@@ -94,23 +94,58 @@ class TrackingEvent(db.Model):
     conversion_value = db.Column(db.Float, default=0.0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Add this route for tracking
+# Add this route for the tracking script to use
 @app.route('/api/v1/track', methods=['POST'])
+def track_event_from_script():
+    """
+    Accepts tracking data from the client-side script using tenant_id and api_key.
+    This is simpler for the client than using JWT.
+    """
+    data = request.json
+    if not data or 'tenant_id' not in data or 'api_key' not in data:
+        return jsonify({"error": "Missing tenant_id or api_key"}), 400
+
+    # Verify tenant exists and API key matches
+    tenant = Tenant.query.filter_by(id=data['tenant_id'], api_key=data['api_key']).first()
+    if not tenant:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    # The customer_id, channel, etc., should be in the request body
+    if 'customer_id' not in data or 'channel' not in data:
+        return jsonify({"error": "Missing required event fields (customer_id, channel)"}), 400
+
+    # Create tracking event
+    event = TrackingEvent(
+        tenant_id=tenant.id,
+        customer_id=data['customer_id'],
+        channel=data['channel'],
+        value=data.get('value', 1.0),
+        is_conversion=data.get('is_conversion', False),
+        conversion_value=data.get('conversion_value', 0.0)
+    )
+    db.session.add(event)
+    db.session.commit()
+    return jsonify({
+        "status": "success",
+        "message": "Event tracked",
+        "event_id": event.id
+    }), 201
+
+# Keep the existing JWT-protected one for potential future use (e.g., server-to-server)
+# But rename it to avoid confusion
+@app.route('/api/v1/track_authenticated', methods=['POST'])
 @jwt_required()
-def track_event():
+def track_event_authenticated():
+    # ... (keep the existing code for this one) ...
+    # This is the code you had before, just renamed.
     current_user = get_jwt_identity()
-    tenant_id = current_user  # In our simplified model, JWT identity is tenant_id
-    
-    # Verify tenant exists
+    tenant_id = current_user
     tenant = Tenant.query.get(tenant_id)
     if not tenant:
         return jsonify({"error": "Invalid tenant"}), 401
-    
     data = request.json
     if not data or 'customer_id' not in data or 'channel' not in data:
         return jsonify({"error": "Missing required fields"}), 400
-    
-    # Create tracking event
     event = TrackingEvent(
         tenant_id=tenant_id,
         customer_id=data['customer_id'],
@@ -119,10 +154,8 @@ def track_event():
         is_conversion=data.get('is_conversion', False),
         conversion_value=data.get('conversion_value', 0.0)
     )
-    
     db.session.add(event)
     db.session.commit()
-    
     return jsonify({
         "status": "success",
         "message": "Event tracked",
