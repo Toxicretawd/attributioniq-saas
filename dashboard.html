@@ -39,204 +39,148 @@
 
   <script>
     // Get tenant ID and API key from URL parameters
-const urlParams = new URLSearchParams(window.location.search);
-const tenantId = urlParams.get('tenant_id');
-const apiKey = urlParams.get('api_key');
-const accessToken = urlParams.get('access_token');
+    const urlParams = new URLSearchParams(window.location.search);
+    const tenantId = urlParams.get('tenant_id');
+    const apiKey = urlParams.get('api_key');
+    const accessToken = urlParams.get('access_token');
 
-// If we don't have an access token, show login screen
-if (!accessToken) {
-  document.getElementById('reportData').innerHTML = `
-    <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-      <h2>AttributionIQ Login</h2>
-      <p>Enter your API key to view your dashboard</p>
-      
-      <form id="loginForm">
-        <div style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-          <input type="text" id="tenantIdInput" value="\${tenantId || ''}" 
-                 style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 5px;">API Key</label>
-          <input type="password" id="apiKeyInput" value="\${apiKey || ''}" 
-                 style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-        </div>
-        
-        <button type="submit" 
-                style="background: #007bff; color: white; border: none; padding: 10px 15px; 
-                       border-radius: 4px; cursor: pointer; width: 100%;">
-          Login
-        </button>
-      </form>
-    </div>
-  `;
-
-  // Handle login form submission
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const tenantId = document.getElementById('tenantIdInput').value;
-    const apiKey = document.getElementById('apiKeyInput').value;
-    
-    try {
-      // First authenticate to get access token
-      const authResponse = await fetch(
-        'https://attributioniq-saas.onrender.com/api/v1/auth/login', 
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ tenant_id: tenantId, api_key: apiKey })
-        }
-      );
-      
-      if (!authResponse.ok) {
-        throw new Error('Invalid credentials');
-      }
-      
-      const authData = await authResponse.json();
-    // Corrected login logic
-    const newUrl = `${window.location.pathname}?tenant_id=${tenantId}&access_token=\${authData.access_token}`;
-    window.location.href = newUrl; // Use href for a full redirect
-      
-    } catch (error) {
-      alert('Login failed: ' + error.message);
-    }
-  });
-  
-  // Stop further execution
-  throw new Error("Authentication required");
-}
-    
-    if (!tenantId || !apiKey) {
-      document.getElementById('reportData').innerHTML = `
-        <div style="background: #fff8f8; border: 1px solid #ffcccc; padding: 15px; border-radius: 4px;">
-          <h3>⚠️ Missing Credentials</h3>
-          <p>This dashboard requires your tenant ID and API key.</p>
-          <p>Example URL: <code>https://yourdomain.com/dashboard?tenant_id=YOUR_ID&api_key=YOUR_KEY</code></p>
-        </div>
-      `;
-      throw new Error("Missing tenant_id or api_key");
-    }
-    
-    async function fetchReport() {
-      try {
-        const response = await fetch(
-          `https://attributioniq-saas.onrender.com/api/v1/report/attribution?days=30`,
-          {
-            headers: {
-              'Authorization': `Bearer \${accessToken}`
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to fetch report');
-        }
-        
-        const report = await response.json();
-        displayReport(report);
-      } catch (error) {
-        document.getElementById('reportData').innerHTML = 
-          `<p style="color: red">Error: \${error.message}</p>`;
-      }
-    }
-    
-    function displayReport(report) {
-      // Display summary metrics
-      let html = `
-        <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
-        <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
-        <h3>Channel Breakdown</h3>
-        <table>
-          <tr>
-            <th>Channel</th>
-            <th>Conversions</th>
-            <th>Revenue</th>
-            <th>% of Total</th>
-          </tr>
-      `;
-      
-      report.channels.forEach(channel => {
-        html += `
-          <tr>
-            <td>\${channel.channel}</td>
-            <td>\${channel.conversions}</td>
-            <td>$\${channel.value.toFixed(2)}</td>
-            <td>\${channel.percentage}%</td>
-          </tr>
+    // If we don't have an access token, show login screen
+    if (!accessToken) {
+        document.getElementById('reportData').innerHTML = `
+            <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2>AttributionIQ Login</h2>
+                <p>Enter your Tenant ID and API Key to view your dashboard</p>
+                <form id="loginForm">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
+                        <input type="text" id="tenantIdInput" value="${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">API Key</label>
+                        <input type="password" id="apiKeyInput" value="${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
+                </form>
+            </div>
         `;
-      });
-      
-      html += `</table>`;
-      document.getElementById('reportData').innerHTML = html;
-      
-      // Create charts
-      renderChannelChart(report);
-      renderRevenueChart(report);
+
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tenantIdFromForm = document.getElementById('tenantIdInput').value;
+            const apiKeyFromForm = document.getElementById('apiKeyInput').value;
+
+            try {
+                // Use a relative URL for the API call
+                const authResponse = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
+                });
+
+                if (!authResponse.ok) {
+                    const errorData = await authResponse.json();
+                    throw new Error(errorData.error || 'Invalid credentials');
+                }
+
+                const authData = await authResponse.json();
+                
+                // Correctly construct the new URL with the access token
+                const newUrl = `${window.location.pathname}?tenant_id=${tenantIdFromForm}&access_token=${authData.access_token}`;
+                window.location.href = newUrl; // Use href for a full redirect
+
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            }
+        });
+
+        // Stop further execution until login is complete
+        return;
     }
-    
+
+    // This check is now redundant if we have an access token, but kept for safety
+    if (!tenantId) {
+        document.getElementById('reportData').innerHTML = `
+            <div style="background: #fff8f8; border: 1px solid #ffcccc; padding: 15px; border-radius: 4px;">
+                <h3>⚠️ Session Corrupted</h3>
+                <p>Your session is missing a Tenant ID. Please log in again.</p>
+            </div>
+        `;
+        return;
+    }
+
+    async function fetchReport() {
+        try {
+            // Use a relative URL for the API call
+            const response = await fetch('/api/v1/report/attribution?days=30', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || error.message || 'Failed to fetch report');
+            }
+
+            const report = await response.json();
+            displayReport(report);
+        } catch (error) {
+            document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+        }
+    }
+
+    function displayReport(report) {
+        // Display summary metrics
+        let html = `
+            <p>Total Conversions: <strong>${report.total_conversions}</strong></p>
+            <p>Total Revenue: <strong>$${report.total_value.toFixed(2)}</strong></p>
+            <h3>Channel Breakdown</h3>
+            <table>
+                <tr><th>Channel</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
+        `;
+        report.channels.forEach(channel => {
+            html += `
+                <tr>
+                    <td>${channel.channel}</td>
+                    <td>${channel.conversions}</td>
+                    <td>$${channel.value.toFixed(2)}</td>
+                    <td>${channel.percentage}%</td>
+                </tr>
+            `;
+        });
+        html += `</table>`;
+        document.getElementById('reportData').innerHTML = html;
+
+        // Create charts
+        renderChannelChart(report);
+        renderRevenueChart(report);
+    }
+
     function renderChannelChart(report) {
-      const ctx = document.getElementById('channelChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: report.channels.map(c => c.channel),
-          datasets: [{
-            label: 'Conversions',
-            data: report.channels.map(c => c.conversions),
-            backgroundColor: 'rgba(54, 162, 235, 0.5)'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0
-              }
-            }
-          }
-        }
-      });
+        const ctx = document.getElementById('channelChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: report.channels.map(c => c.channel),
+                datasets: [{ label: 'Conversions', data: report.channels.map(c => c.conversions), backgroundColor: 'rgba(54, 162, 235, 0.5)' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
     }
-    
+
     function renderRevenueChart(report) {
-      const ctx = document.getElementById('revenueChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: report.channels.map(c => c.channel),
-          datasets: [{
-            data: report.channels.map(c => c.value),
-            backgroundColor: [
-              'rgba(255, 99, 132, 0.5)',
-              'rgba(54, 162, 235, 0.5)',
-              'rgba(255, 206, 86, 0.5)',
-              'rgba(75, 192, 192, 0.5)',
-              'rgba(153, 102, 255, 0.5)'
-            ]
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'right'
-            }
-          }
-        }
-      });
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: report.channels.map(c => c.channel),
+                datasets: [{ data: report.channels.map(c => c.value), backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(153, 102, 255, 0.5)'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+        });
     }
-    
-    // Initialize
+
+    // Initialize by fetching the report
     fetchReport();
-  </script>
+</script>
 </body>
 </html>
