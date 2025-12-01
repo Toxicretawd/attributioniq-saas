@@ -30,9 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   
   function trackEvent(data) {
-    // Get the API endpoint from the config, or fall back to a relative URL
-    const apiEndpoint = window.attributionIQ.api_endpoint || '';
-
     // Add the credentials to the data payload
     const payload = {
         ...data, // Includes customer_id, channel, etc.
@@ -40,10 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
         api_key: apiKey
     };
 
-    // Construct the full URL for the fetch request
-    const fetchUrl = `\${apiEndpoint}/api/v1/track`;
-
-    fetch(fetchUrl, {
+    // Use a relative URL. This will work because the script is served
+    // from the same domain as the API.
+    fetch('/api/v1/track', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
