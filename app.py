@@ -170,46 +170,56 @@ def track_event_authenticated():
 @jwt_required()
 def get_attribution_report():
     tenant_id = get_jwt_identity()
-    
-    # Verify tenant exists
     tenant = Tenant.query.get(tenant_id)
     if not tenant:
         return jsonify({"error": "Invalid tenant"}), 401
-    
+
     days = request.args.get('days', 30, type=int)
-    
-    # Get conversion events
-    conversions = TrackingEvent.query.filter(
+    since_date = datetime.utcnow() - timedelta(days=days)
+
+    # Get ALL events for the period
+    all_events = TrackingEvent.query.filter(
         TrackingEvent.tenant_id == tenant_id,
-        TrackingEvent.is_conversion == True,
-        TrackingEvent.timestamp >= datetime.utcnow() - timedelta(days=days)
+        TrackingEvent.timestamp >= since_date
     ).all()
-    
-    # Simple attribution calculation
-    channel_counts = {}
-    channel_values = {}
-    
-    for conv in conversions:
-        channel = conv.channel
-        channel_counts[channel] = channel_counts.get(channel, 0) + 1
-        channel_values[channel] = channel_values.get(channel, 0) + conv.conversion_value
-    
+
+    # Separate them into page views and conversions
+    page_views = [e for e in all_events if not e.is_conversion]
+    conversions = [e for e in all_events if e.is_conversion]
+
+    # Aggregate data by channel
+    channel_stats = {}
+    for event in all_events:
+        channel = event.channel
+        if channel not in channel_stats:
+            channel_stats[channel] = {'page_views': 0, 'conversions': 0, 'value': 0}
+        
+        channel_stats[channel]['page_views'] += 1
+        if event.is_conversion:
+            channel_stats[channel]['conversions'] += 1
+            channel_stats[channel]['value'] += event.conversion_value
+
     # Format response
     report = {
         "period": f"last {days} days",
+        "total_page_views": len(page_views),
         "total_conversions": len(conversions),
-        "total_value": sum(channel_values.values()),
+        "total_value": sum(c.conversion_value for c in conversions),
         "channels": []
     }
-    
-    for channel, count in channel_counts.items():
+
+    for channel, stats in channel_stats.items():
         report["channels"].append({
             "channel": channel,
-            "conversions": count,
-            "value": channel_values.get(channel, 0),
-            "percentage": round((channel_values.get(channel, 0) / report["total_value"] * 100) if report["total_value"] > 0 else 0, 2)
+            "page_views": stats['page_views'],
+            "conversions": stats['conversions'],
+            "value": stats['value'],
+            "percentage": round((stats['value'] / report["total_value"] * 100) if report["total_value"] > 0 else 0, 2)
         })
-    
+
+    # Sort channels by total value for better display
+    report["channels"].sort(key=lambda x: x['value'], reverse=True)
+
     return jsonify(report), 200
 @app.route('/tracker.js')
 def serve_tracker():

@@ -129,31 +129,33 @@
     }
 
     function displayReport(report) {
-        // Display summary metrics
-        let html = `
-            <p>Total Conversions: <strong>${report.total_conversions}</strong></p>
-            <p>Total Revenue: <strong>$${report.total_value.toFixed(2)}</strong></p>
-            <h3>Channel Breakdown</h3>
-            <table>
-                <tr><th>Channel</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
+    // Display summary metrics
+    let html = `
+        <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
+        <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
+        <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
+        <h3>Channel Breakdown</h3>
+        <table>
+            <tr><th>Channel</th><th>Page Views</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
+    `;
+    report.channels.forEach(channel => {
+        html += `
+            <tr>
+                <td>\${channel.channel}</td>
+                <td>\${channel.page_views}</td>
+                <td>\${channel.conversions}</td>
+                <td>$\${channel.value.toFixed(2)}</td>
+                <td>\${channel.percentage}%</td>
+            </tr>
         `;
-        report.channels.forEach(channel => {
-            html += `
-                <tr>
-                    <td>${channel.channel}</td>
-                    <td>${channel.conversions}</td>
-                    <td>$${channel.value.toFixed(2)}</td>
-                    <td>${channel.percentage}%</td>
-                </tr>
-            `;
-        });
-        html += `</table>`;
-        document.getElementById('reportData').innerHTML = html;
+    });
+    html += `</table>`;
+    document.getElementById('reportData').innerHTML = html;
 
-        // Create charts
-        renderChannelChart(report);
-        renderRevenueChart(report);
-    }
+    // Create charts
+    renderChannelChart(report);
+    renderRevenueChart(report);
+}
 
     function renderChannelChart(report) {
         const ctx = document.getElementById('channelChart').getContext('2d');
