@@ -45,51 +45,53 @@
     const accessToken = urlParams.get('access_token');
 
     // If we don't have an access token, show login screen
-    if (!accessToken) {
-        document.getElementById('reportData').innerHTML = `
-            <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <h2>AttributionIQ Login</h2>
-                <p>Enter your Tenant ID and API Key to view your dashboard</p>
-                <form id="loginForm">
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-                        <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">API Key</label>
-                        <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
-                </form>
-            </div>
-        `;
+if (!accessToken) {
+    const loginHtml = `
+        <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2>AttributionIQ Login</h2>
+            <p>Enter your Tenant ID and API Key to view your dashboard</p>
+            <form id="loginForm">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
+                    <input type="text" id="tenantIdInput" value="${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">API Key</label>
+                    <input type="password" id="apiKeyInput" value="${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
+            </form>
+        </div>
+    `;
+    document.getElementById('reportData').innerHTML = loginHtml;
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const tenantIdFromForm = document.getElementById('tenantIdInput').value;
-            const apiKeyFromForm = document.getElementById('apiKeyInput').value;
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tenantIdFromForm = document.getElementById('tenantIdInput').value;
+        const apiKeyFromForm = document.getElementById('apiKeyInput').value;
 
-            try {
-                const authResponse = await fetch('/api/v1/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
-                });
+        try {
+            const authResponse = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
+            });
 
-                if (!authResponse.ok) {
-                    const errorData = await authResponse.json();
-                    throw new Error(errorData.error || 'Invalid credentials');
-                }
-
-                const authData = await authResponse.json();
-                const newUrl = `${window.location.pathname}?tenant_id=${tenantIdFromForm}&access_token=\${authData.access_token}`;
-                window.location.href = newUrl;
-            } catch (error) {
-                alert('Login failed: ' + error.message);
+            if (!authResponse.ok) {
+                const errorData = await authResponse.json();
+                throw new Error(errorData.error || 'Invalid credentials');
             }
-        });
-        return;
-    }
+
+            const authData = await authResponse.json();
+            const newUrl = `${window.location.pathname}?tenant_id=${tenantIdFromForm}&access_token=${authData.access_token}`;
+            window.location.href = newUrl;
+        } catch (error) {
+            alert('Login failed: ' + error.message);
+        }
+    });
+
+    return; // This return is now unambiguously inside the 'if' block
+}
 
     // This is the CRITICAL function. We are adding better error handling.
     async function fetchReport() {
