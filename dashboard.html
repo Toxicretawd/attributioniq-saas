@@ -46,50 +46,65 @@
         const accessToken = urlParams.get('access_token');
 
         // If we don't have an access token, show login screen
-        if (!accessToken) {
-            const loginHtml = `
-                <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                    <h2>AttributionIQ Login</h2>
-                    <p>Enter your Tenant ID and API Key to view your dashboard</p>
-                    <form id="loginForm">
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-                            <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px;">API Key</label>
-                            <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
-                    </form>
-                </div>
-            `;
-            document.getElementById('reportData').innerHTML = loginHtml;
-
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const tenantIdFromForm = document.getElementById('tenantIdInput').value;
-                const apiKeyFromForm = document.getElementById('apiKeyInput').value;
-
-                try {
-                    const authResponse = await fetch('/api/v1/auth/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
-                    });
-
-                    if (!authResponse.ok) {
-                        const errorData = await authResponse.json();
-                        throw new Error(errorData.error || 'Invalid credentials');
-                    }
-
-                    const authData = await authResponse.json();
-                    const newUrl = `${window.location.pathname}?tenant_id=${tenantIdFromForm}&access_token=\${authData.access_token}`;
-                    window.location.href = newUrl;
-                } catch (error) {
-                    alert('Login failed: ' + error.message);
+        // If we don't have an access token, show login screen
+    if (!accessToken) {
+        const loginHtml = `
+            <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2>AttributionIQ Login</h2>
+                <p>Enter your Tenant ID and API Key to view your dashboard</p>
+                <form id="loginForm">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
+                        <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">API Key</label>
+                        <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
+                </form>
+            </div>
+        `;
+        document.getElementById('reportData').innerHTML = loginHtml;
+        
+        // Add the event listener AFTER the form is in the DOM
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // Prevent default form submission
+            console.log('Login form submitted'); // Add this debug log
+        
+            const tenantIdFromForm = document.getElementById('tenantIdInput').value;
+            const apiKeyFromForm = document.getElementById('apiKeyInput').value;
+        
+            console.log('Attempting login with:', { tenantId: tenantIdFromForm, apiKey: apiKeyFromForm }); // Add this debug log
+        
+            try {
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
+                });
+            
+                console.log('Login response status:', response.status); // Add this debug log
+            
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Login failed:', errorData); // Add this debug log
+                    throw new Error(errorData.error || 'Invalid credentials');
                 }
-            });
+            
+                const authData = await response.json();
+                console.log('Login successful, received data:', authData); // Add this debug log
+            
+                // Construct the new URL and redirect
+                const newUrl = `${window.location.pathname}?tenant_id=${authData.tenant_id}&access_token=\${authData.access_token}`;
+                console.log('Redirecting to:', newUrl); // Add this debug log
+                window.location.href = newUrl;
+            
+            } catch (error) {
+                console.error('An error occurred during login:', error); // Add this debug log
+                alert('Login failed: ' + error.message);
+            }
+        });
 
         } else {
             // This block only runs if the accessToken exists
