@@ -234,9 +234,19 @@ def dashboard():
 ######temp debug route
 
 @app.route('/debug/report', methods=['GET'])
-@jwt_required()
 def debug_report():
-    tenant_id = get_jwt_identity()
+    # Get the token from the URL parameter
+    token = request.args.get('access_token')
+    if not token:
+        return jsonify({"error": "Missing access_token in URL"}), 400
+
+    # Decode the token manually to get the tenant_id
+    try:
+        decoded_token = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        tenant_id = decoded_token['sub']
+    except:
+        return jsonify({"error": "Invalid or expired access_token"}), 401
+
     tenant = Tenant.query.get(tenant_id)
     if not tenant:
         return jsonify({"error": "Invalid tenant"}), 401
