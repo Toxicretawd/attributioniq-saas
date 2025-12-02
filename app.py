@@ -12,23 +12,27 @@ CORS(app)  # Enable Cross-Origin Resource Sharing for all routes
 
 # --- Configuration ---
 # This block determines the database URI based on the environment.
-if os.environ.get('RENDER'):
-    # Production: Use PostgreSQL on Render
-    database_url = os.getenv('DATABASE_URL', '')
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+if os.environ.get('RENDER'):  # Check if we are running on Render
+    database_url = os.getenv('DATABASE_URL')
+    
+    # If DATABASE_URL is not set, fail with a clear error message.
+    if not database_url:
+        raise RuntimeError("FATAL: RENDER environment detected, but DATABASE_URL is not set. Please check your Render environment variables.")
+
+    # Render provides a postgres:// URL, but SQLAlchemy needs postgresql://
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    # Development: Use SQLite
+
+else:  # Local development
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///development.db'
     print("⚠️ Using SQLite for local development (PostgreSQL will be used in production)")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Set the JWT secret key ONCE from environment variables or a default.
-# This is the key used to sign and verify tokens.
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-key-for-testing')
-
 # --- Extensions Initialization ---
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
