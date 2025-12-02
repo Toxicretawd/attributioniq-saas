@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, decode_token, jwt # <--- ADDED jwt HERE
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, decode_token
 import os
 from datetime import datetime, timedelta
 
@@ -36,6 +36,19 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-key-for-tes
 # --- Extensions Initialization ---
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
+
+# This tells flask-jwt-extended how to handle expired/invalid tokens
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return jsonify({"error": "Token has expired"}), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({"error": "Invalid token"}), 401
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return jsonify({"error": "Authorization token is required"}), 401
 
 # --- Models ---
 class Tenant(db.Model):
