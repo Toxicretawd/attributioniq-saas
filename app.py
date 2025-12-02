@@ -1,11 +1,13 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token
 import os
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+CORS(app)
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-key-for-testing')
 jwt = JWTManager(app)
 # Configuration
@@ -23,6 +25,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-key-for-testing')
 
 # Initialize extensions
+
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
