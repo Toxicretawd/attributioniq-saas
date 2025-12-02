@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, decode_token
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, decode_token, jwt # <--- ADDED jwt HERE
 import os
 from datetime import datetime, timedelta
 
