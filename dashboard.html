@@ -47,7 +47,7 @@
 
         // If we don't have an access token, show login screen
         // If we don't have an access token, show login screen
-    if (!accessToken) {
+        if (!accessToken) {
         const loginHtml = `
             <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
                 <h2>AttributionIQ Login</h2>
@@ -67,15 +67,10 @@
         `;
         document.getElementById('reportData').innerHTML = loginHtml;
         
-        // Add the event listener AFTER the form is in the DOM
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault(); // Prevent default form submission
-            console.log('Login form submitted'); // Add this debug log
-        
+            e.preventDefault();
             const tenantIdFromForm = document.getElementById('tenantIdInput').value;
             const apiKeyFromForm = document.getElementById('apiKeyInput').value;
-        
-            console.log('Attempting login with:', { tenantId: tenantIdFromForm, apiKey: apiKeyFromForm }); // Add this debug log
         
             try {
                 const response = await fetch('/api/v1/auth/login', {
@@ -84,27 +79,28 @@
                     body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
                 });
             
-                console.log('Login response status:', response.status); // Add this debug log
-            
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error('Login failed:', errorData); // Add this debug log
                     throw new Error(errorData.error || 'Invalid credentials');
                 }
             
                 const authData = await response.json();
-                console.log('Login successful, received data:', authData); // Add this debug log
+                
+                // --- THIS IS THE CRITICAL FIX ---
+                // Create a new URL object to manipulate the query parameters safely
+                const url = new URL(window.location);
+                url.searchParams.set('tenant_id', authData.tenant_id);
+                url.searchParams.set('access_token', authData.access_token);
+                url.searchParams.delete('api_key'); // Clean up the URL
             
-                // Construct the new URL and redirect
-                const newUrl = `${window.location.pathname}?tenant_id=${authData.tenant_id}&access_token=\${authData.access_token}`;
-                console.log('Redirecting to:', newUrl); // Add this debug log
-                window.location.href = newUrl;
+                // Redirect to the new, correct URL
+                window.location.href = url.toString();
             
             } catch (error) {
-                console.error('An error occurred during login:', error); // Add this debug log
                 alert('Login failed: ' + error.message);
             }
         });
+
 
         } else {
             // This block only runs if the accessToken exists
