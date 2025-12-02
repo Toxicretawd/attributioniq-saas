@@ -53,25 +53,23 @@
                 <form id="loginForm">
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-                        <input type="text" id="tenantIdInput" value="${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; margin-bottom: 5px;">API Key</label>
-                        <input type="password" id="apiKeyInput" value="${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
                 </form>
             </div>
         `;
 
-        // Handle login form submission
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const tenantIdFromForm = document.getElementById('tenantIdInput').value;
             const apiKeyFromForm = document.getElementById('apiKeyInput').value;
 
             try {
-                // Use a relative URL for the API call
                 const authResponse = await fetch('/api/v1/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -84,78 +82,74 @@
                 }
 
                 const authData = await authResponse.json();
-                
-                // Correctly construct the new URL with the access token
-                const newUrl = `${window.location.pathname}?tenant_id=${tenantIdFromForm}&access_token=${authData.access_token}`;
-                window.location.href = newUrl; // Use href for a full redirect
-
+                const newUrl = `${window.location.pathname}?tenant_id=${tenantIdFromForm}&access_token=\${authData.access_token}`;
+                window.location.href = newUrl;
             } catch (error) {
                 alert('Login failed: ' + error.message);
             }
         });
-
-        // Stop further execution until login is complete
         return;
     }
 
-    // This check is now redundant if we have an access token, but kept for safety
-    if (!tenantId) {
-        document.getElementById('reportData').innerHTML = `
-            <div style="background: #fff8f8; border: 1px solid #ffcccc; padding: 15px; border-radius: 4px;">
-                <h3>⚠️ Session Corrupted</h3>
-                <p>Your session is missing a Tenant ID. Please log in again.</p>
-            </div>
-        `;
-        return;
-    }
-
+    // This is the CRITICAL function. We are adding better error handling.
     async function fetchReport() {
+        console.log('Fetching report with token:', accessToken.substring(0, 20) + '...'); // Log first 20 chars of token
+
         try {
-            // Use a relative URL for the API call
             const response = await fetch('/api/v1/report/attribution?days=30', {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
+                method: 'GET', // Explicitly set method to GET
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer \${accessToken}` // Ensure header is correctly formatted
+                }
             });
 
+            console.log('Fetch response status:', response.status); // Log the response status
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || error.message || 'Failed to fetch report');
+                const errorData = await response.json();
+                console.error('Error response from API:', errorData); // Log the error details
+                throw new Error(errorData.error || errorData.msg || `HTTP error! status: \${response.status}`);
             }
 
             const report = await response.json();
+            console.log('Successfully received report data:', report); // Log the successful data
             displayReport(report);
+
         } catch (error) {
-            document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            console.error('Failed to fetch report:', error); // Log any network or other errors
+            document.getElementById('reportData').innerHTML = `<p style="color: red">Error: \${error.message}</p>`;
         }
     }
 
     function displayReport(report) {
-    // Display summary metrics
-    let html = `
-        <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
-        <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
-        <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
-        <h3>Channel Breakdown</h3>
-        <table>
-            <tr><th>Channel</th><th>Page Views</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
-    `;
-    report.channels.forEach(channel => {
-        html += `
-            <tr>
-                <td>\${channel.channel}</td>
-                <td>\${channel.page_views}</td>
-                <td>\${channel.conversions}</td>
-                <td>$\${channel.value.toFixed(2)}</td>
-                <td>\${channel.percentage}%</td>
-            </tr>
+        // Display summary metrics
+        let html = `
+            <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
+            <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
+            <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
+            <h3>Channel Breakdown</h3>
+            <table>
+                <tr><th>Channel</th><th>Page Views</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
         `;
-    });
-    html += `</table>`;
-    document.getElementById('reportData').innerHTML = html;
+        report.channels.forEach(channel => {
+            html += `
+                <tr>
+                    <td>\${channel.channel}</td>
+                    <td>\${channel.page_views}</td>
+                    <td>\${channel.conversions}</td>
+                    <td>$\${channel.value.toFixed(2)}</td>
+                    <td>\${channel.percentage}%</td>
+                </tr>
+            `;
+        });
+        html += `</table>`;
+        document.getElementById('reportData').innerHTML = html;
 
-    // Create charts
-    renderChannelChart(report);
-    renderRevenueChart(report);
-}
+        // Create charts
+        renderChannelChart(report);
+        renderRevenueChart(report);
+    }
 
     function renderChannelChart(report) {
         const ctx = document.getElementById('channelChart').getContext('2d');
@@ -183,6 +177,9 @@
 
     // Initialize by fetching the report
     fetchReport();
+
+    // Refresh the report every 30 seconds
+    setInterval(fetchReport, 30000);
 </script>
 </body>
 </html>
