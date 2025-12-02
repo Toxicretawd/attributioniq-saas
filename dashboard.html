@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AttributionIQ Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-    canvas { max-height: 300px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
-    th { background-color: #f5f5f5; }
-  </style>
+    <title>AttributionIQ Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        canvas { max-height: 300px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+        th { background-color: #f5f5f5; }
+    </style>
 </head>
 <body>
     <h1>AttributionIQ Dashboard</h1>
@@ -37,7 +37,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Get tenant ID and API key from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -46,62 +45,58 @@
         const accessToken = urlParams.get('access_token');
 
         // If we don't have an access token, show login screen
-        // If we don't have an access token, show login screen
         if (!accessToken) {
-        const loginHtml = `
-            <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <h2>AttributionIQ Login</h2>
-                <p>Enter your Tenant ID and API Key to view your dashboard</p>
-                <form id="loginForm">
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-                        <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">API Key</label>
-                        <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
-                </form>
-            </div>
-        `;
-        document.getElementById('reportData').innerHTML = loginHtml;
-        
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const tenantIdFromForm = document.getElementById('tenantIdInput').value;
-            const apiKeyFromForm = document.getElementById('apiKeyInput').value;
-        
-            try {
-                const response = await fetch('/api/v1/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
-                });
-            
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Invalid credentials');
+            const loginHtml = `
+                <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2>AttributionIQ Login</h2>
+                    <p>Enter your Tenant ID and API Key to view your dashboard</p>
+                    <form id="loginForm">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
+                            <input type="text" id="tenantIdInput" value="${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">API Key</label>
+                            <input type="password" id="apiKeyInput" value="${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
+                    </form>
+                </div>
+            `;
+            document.getElementById('reportData').innerHTML = loginHtml;
+
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const tenantIdFromForm = document.getElementById('tenantIdInput').value;
+                const apiKeyFromForm = document.getElementById('apiKeyInput').value;
+
+                try {
+                    const response = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Invalid credentials');
+                    }
+
+                    const authData = await response.json();
+                    
+                    // Create a new URL object to manipulate the query parameters safely
+                    const url = new URL(window.location);
+                    url.searchParams.set('tenant_id', authData.tenant_id);
+                    url.searchParams.set('access_token', authData.access_token);
+                    url.searchParams.delete('api_key'); // Clean up the URL
+
+                    // Redirect to the new, correct URL
+                    window.location.href = url.toString();
+
+                } catch (error) {
+                    alert('Login failed: ' + error.message);
                 }
-            
-                const authData = await response.json();
-                
-                // --- THIS IS THE CRITICAL FIX ---
-                // Create a new URL object to manipulate the query parameters safely
-                const url = new URL(window.location);
-                url.searchParams.set('tenant_id', authData.tenant_id);
-                url.searchParams.set('access_token', authData.access_token);
-                url.searchParams.delete('api_key'); // Clean up the URL
-            
-                // Redirect to the new, correct URL
-                window.location.href = url.toString();
-            
-            } catch (error) {
-                alert('Login failed: ' + error.message);
-            }
-        });
-
-
+            });
         } else {
             // This block only runs if the accessToken exists
             async function fetchReport() {
@@ -110,13 +105,13 @@
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer \${accessToken}`
+                            'Authorization': `Bearer ${accessToken}` // <-- CORRECTED
                         }
                     });
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: \${response.status}`);
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`); // <-- CORRECTED
                     }
 
                     const report = await response.json();
@@ -124,15 +119,15 @@
 
                 } catch (error) {
                     console.error('Failed to fetch report:', error);
-                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: \${error.message}</p>`;
+                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`; // <-- CORRECTED
                 }
             }
 
             function displayReport(report) {
                 let html = `
-                    <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
-                    <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
-                    <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
+                    <p>Total Page Views: <strong>${report.total_page_views}</strong></p>
+                    <p>Total Conversions: <strong>${report.total_conversions}</strong></p>
+                    <p>Total Revenue: <strong>$${report.total_value.toFixed(2)}</strong></p>
                     <h3>Channel Breakdown</h3>
                     <table>
                         <tr><th>Channel</th><th>Page Views</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
@@ -140,11 +135,11 @@
                 report.channels.forEach(channel => {
                     html += `
                         <tr>
-                            <td>\${channel.channel}</td>
-                            <td>\${channel.page_views}</td>
-                            <td>\${channel.conversions}</td>
-                            <td>$\${channel.value.toFixed(2)}</td>
-                            <td>\${channel.percentage}%</td>
+                            <td>${channel.channel}</td>
+                            <td>${channel.page_views}</td>
+                            <td>${channel.conversions}</td>
+                            <td>$${channel.value.toFixed(2)}</td>
+                            <td>${channel.percentage}%</td>
                         </tr>
                     `;
                 });
