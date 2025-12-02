@@ -231,6 +231,36 @@ def dashboard():
     """Serve the dashboard UI"""
     return send_file('dashboard.html')
 
+######temp debug route
+
+@app.route('/debug/report', methods=['GET'])
+@jwt_required()
+def debug_report():
+    tenant_id = get_jwt_identity()
+    tenant = Tenant.query.get(tenant_id)
+    if not tenant:
+        return jsonify({"error": "Invalid tenant"}), 401
+
+    days = request.args.get('days', 30, type=int)
+    since_date = datetime.utcnow() - timedelta(days=days)
+
+    # Get ALL events for the period
+    all_events = TrackingEvent.query.filter(
+        TrackingEvent.tenant_id == tenant_id,
+        TrackingEvent.timestamp >= since_date
+    ).all()
+
+    # Return raw events for debugging
+    return jsonify([{
+        'id': event.id,
+        'tenant_id': event.tenant_id,
+        'customer_id': event.customer_id,
+        'channel': event.channel,
+        'value': event.value,
+        'is_conversion': event.is_conversion,
+        'conversion_value': event.conversion_value,
+        'timestamp': event.timestamp
+    } for event in all_events]), 200
 if __name__ == '__main__':
     with app.app_context():
         print("✨ Creating database tables...")
