@@ -37,14 +37,18 @@
         </div>
     </div>
 
-    <script>
+        <script>
         // Get tenant ID and API key from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const tenantId = urlParams.get('tenant_id');
         const apiKey = urlParams.get('api_key');
         const accessToken = urlParams.get('access_token');
+        
+        // --- CHART INSTANCE VARIABLES ---
+        // These must be declared in the global scope of the script
         let channelChartInstance = null;
         let revenueChartInstance = null;
+        
         // If we don't have an access token, show login screen
         if (!accessToken) {
             const loginHtml = `
@@ -54,35 +58,35 @@
                     <form id="loginForm">
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-                            <input type="text" id="tenantIdInput" value="${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px;">API Key</label>
-                            <input type="password" id="apiKeyInput" value="${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
                     </form>
                 </div>
             `;
             document.getElementById('reportData').innerHTML = loginHtml;
-
+            
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const tenantIdFromForm = document.getElementById('tenantIdInput').value;
                 const apiKeyFromForm = document.getElementById('apiKeyInput').value;
-
+            
                 try {
                     const response = await fetch('/api/v1/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
                     });
-
+                
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Invalid credentials');
                     }
-
+                
                     const authData = await response.json();
                     
                     // Create a new URL object to manipulate the query parameters safely
@@ -90,10 +94,10 @@
                     url.searchParams.set('tenant_id', authData.tenant_id);
                     url.searchParams.set('access_token', authData.access_token);
                     url.searchParams.delete('api_key'); // Clean up the URL
-
+                
                     // Redirect to the new, correct URL
                     window.location.href = url.toString();
-
+                
                 } catch (error) {
                     alert('Login failed: ' + error.message);
                 }
@@ -106,29 +110,29 @@
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${accessToken}` // <-- CORRECTED
+                            'Authorization': `Bearer \${accessToken}`
                         }
                     });
-
+                
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`); // <-- CORRECTED
+                        throw new Error(errorData.error || `HTTP error! status: \${response.status}`);
                     }
-
+                
                     const report = await response.json();
                     displayReport(report);
-
+                
                 } catch (error) {
                     console.error('Failed to fetch report:', error);
-                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`; // <-- CORRECTED
+                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: \${error.message}</p>`;
                 }
             }
-
+        
             function displayReport(report) {
                 let html = `
-                    <p>Total Page Views: <strong>${report.total_page_views}</strong></p>
-                    <p>Total Conversions: <strong>${report.total_conversions}</strong></p>
-                    <p>Total Revenue: <strong>$${report.total_value.toFixed(2)}</strong></p>
+                    <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
+                    <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
+                    <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
                     <h3>Channel Breakdown</h3>
                     <table>
                         <tr><th>Channel</th><th>Page Views</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
@@ -136,59 +140,44 @@
                 report.channels.forEach(channel => {
                     html += `
                         <tr>
-                            <td>${channel.channel}</td>
-                            <td>${channel.page_views}</td>
-                            <td>${channel.conversions}</td>
-                            <td>$${channel.value.toFixed(2)}</td>
-                            <td>${channel.percentage}%</td>
+                            <td>\${channel.channel}</td>
+                            <td>\${channel.page_views}</td>
+                            <td>\${channel.conversions}</td>
+                            <td>$\${channel.value.toFixed(2)}</td>
+                            <td>\${channel.percentage}%</td>
                         </tr>
                     `;
                 });
                 html += `</table>`;
                 document.getElementById('reportData').innerHTML = html;
-
+            
                 renderChannelChart(report);
                 renderRevenueChart(report);
             }
-
+        
             function renderChannelChart(report) {
-            // Destroy the old chart instance if it exists
-            if (channelChartInstance) {
-                channelChartInstance.destroy();
+                // Destroy the old chart instance if it exists
+                if (channelChartInstance) {
+                    channelChartInstance.destroy();
+                }
+                const ctx = document.getElementById('channelChart').getContext('2d');
+                channelChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: report.channels.map(c => c.channel),
+                        datasets: [{ label: 'Conversions', data: report.channels.map(c => c.conversions), backgroundColor: 'rgba(54, 162, 235, 0.5)' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                });
             }
         
-            const ctx = document.getElementById('channelChart').getContext('2d');
-            channelChartInstance = new Chart(ctx, { // Assign the new chart to the variable
-                type: 'bar',
-                data: {
-                    labels: report.channels.map(c => c.channel),
-                    datasets: [{ label: 'Conversions', data: report.channels.map(c => c.conversions), backgroundColor: 'rgba(54, 162, 235, 0.5)' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
-            });
-        }
-
-// Replace your existing renderRevenueChart function with this one
-function renderRevenueChart(report) {
-    // Destroy the old chart instance if it exists
-    if (revenueChartInstance) {
-        revenueChartInstance.destroy();
-    }
-
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    revenueChartInstance = new Chart(ctx, { // Assign the new chart to the variable
-        type: 'doughnut',
-        data: {
-            labels: report.channels.map(c => c.channel),
-            datasets: [{ data: report.channels.map(c => c.value), backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(153, 102, 255, 0.5)'] }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-    });
-}
-
             function renderRevenueChart(report) {
+                // Destroy the old chart instance if it exists
+                if (revenueChartInstance) {
+                    revenueChartInstance.destroy();
+                }
                 const ctx = document.getElementById('revenueChart').getContext('2d');
-                new Chart(ctx, {
+                revenueChartInstance = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         labels: report.channels.map(c => c.channel),
@@ -197,10 +186,10 @@ function renderRevenueChart(report) {
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
                 });
             }
-
+        
             // Initialize by fetching the report
             fetchReport();
-
+        
             // Refresh the report every 30 seconds
             setInterval(fetchReport, 30000);
         }
