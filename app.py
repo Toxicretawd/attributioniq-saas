@@ -32,7 +32,7 @@ else:  # Local development
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Set the JWT secret key ONCE from environment variables or a default.
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-key-for-testing')
+app.config['JWT_SECRET_KEY'] = 'a-temporary-hardcoded-secret-key-for-debugging-12345'
 # --- Extensions Initialization ---
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
