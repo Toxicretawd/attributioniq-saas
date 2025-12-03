@@ -209,7 +209,7 @@ def get_attribution_report():
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({"status": "healthy"}), 200
+    return jsonify({"status": "healthy", "version": "2.0"}), 200
 
 # --- Frontend & Static File Routes ---
 @app.route('/tracker.js')
