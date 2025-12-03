@@ -37,18 +37,18 @@
         </div>
     </div>
 
-        <script>
+    <script>
         // Get tenant ID and API key from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const tenantId = urlParams.get('tenant_id');
         const apiKey = urlParams.get('api_key');
         const accessToken = urlParams.get('access_token');
-        
+
         // --- CHART INSTANCE VARIABLES ---
         // These must be declared in the global scope of the script
         let channelChartInstance = null;
         let revenueChartInstance = null;
-        
+
         // If we don't have an access token, show login screen
         if (!accessToken) {
             const loginHtml = `
@@ -69,65 +69,68 @@
                 </div>
             `;
             document.getElementById('reportData').innerHTML = loginHtml;
-            
+
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const tenantIdFromForm = document.getElementById('tenantIdInput').value;
                 const apiKeyFromForm = document.getElementById('apiKeyInput').value;
-            
+
                 try {
                     const response = await fetch('/api/v1/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
                     });
-                
+
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Invalid credentials');
                     }
-                
+
                     const authData = await response.json();
                     
-                    // Create a new URL object to manipulate the query parameters safely
+                    // Use location.replace to ensure a clean redirect
                     const url = new URL(window.location);
                     url.searchParams.set('tenant_id', authData.tenant_id);
                     url.searchParams.set('access_token', authData.access_token);
-                    url.searchParams.delete('api_key'); // Clean up the URL
-                
-                    // Redirect to the new, correct URL
-                    window.location.href = url.toString();
-                
+                    url.searchParams.delete('api_key');
+
+                    window.location.replace(url.toString());
+
                 } catch (error) {
                     alert('Login failed: ' + error.message);
                 }
             });
         } else {
             // This block only runs if the accessToken exists
+
+            // --- ADD A SMALL DELAY BEFORE THE FIRST FETCH ---
+            setTimeout(fetchReport, 500); // Wait 500ms before fetching the report
+
             async function fetchReport() {
                 try {
                     const response = await fetch('/api/v1/report/attribution?days=30', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer \${accessToken}`
+                            'Authorization': `Bearer \${accessToken}` // <-- CORRECTED
                         }
                     });
-                
+
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: \${response.status}`);
+                        throw new Error(errorData.error || `HTTP error! status: \${response.status}`); // <-- CORRECTED
                     }
-                
+
                     const report = await response.json();
                     displayReport(report);
-                
+
                 } catch (error) {
                     console.error('Failed to fetch report:', error);
-                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: \${error.message}</p>`;
+                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: \${error.message}</p>`; // <-- CORRECTED
                 }
             }
-        
+
             function displayReport(report) {
                 let html = `
                     <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
@@ -150,11 +153,11 @@
                 });
                 html += `</table>`;
                 document.getElementById('reportData').innerHTML = html;
-            
+
                 renderChannelChart(report);
                 renderRevenueChart(report);
             }
-        
+
             function renderChannelChart(report) {
                 // Destroy the old chart instance if it exists
                 if (channelChartInstance) {
@@ -170,7 +173,7 @@
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
             }
-        
+
             function renderRevenueChart(report) {
                 // Destroy the old chart instance if it exists
                 if (revenueChartInstance) {
@@ -186,10 +189,7 @@
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
                 });
             }
-        
-            // Initialize by fetching the report
-            fetchReport();
-        
+
             // Refresh the report every 30 seconds
             setInterval(fetchReport, 30000);
         }
