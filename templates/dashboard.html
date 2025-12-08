@@ -43,12 +43,12 @@
         const tenantId = urlParams.get('tenant_id');
         const apiKey = urlParams.get('api_key');
         const accessToken = urlParams.get('access_token');
-
+        
         // --- CHART INSTANCE VARIABLES ---
         // These must be declared in the global scope of the script
         let channelChartInstance = null;
         let revenueChartInstance = null;
-
+        
         // If we don't have an access token, show login screen
         if (!accessToken) {
             const loginHtml = `
@@ -58,79 +58,79 @@
                     <form id="loginForm">
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px;">Tenant ID</label>
-                            <input type="text" id="tenantIdInput" value="\${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <input type="text" id="tenantIdInput" value="${tenantId || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px;">API Key</label>
-                            <input type="password" id="apiKeyInput" value="\${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <input type="password" id="apiKeyInput" value="${apiKey || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; width: 100%;"> Login </button>
                     </form>
                 </div>
             `;
             document.getElementById('reportData').innerHTML = loginHtml;
-
+            
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const tenantIdFromForm = document.getElementById('tenantIdInput').value;
                 const apiKeyFromForm = document.getElementById('apiKeyInput').value;
-
+            
                 try {
                     const response = await fetch('/api/v1/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tenant_id: tenantIdFromForm, api_key: apiKeyFromForm })
                     });
-
+                
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Invalid credentials');
                     }
-
+                
                     const authData = await response.json();
-                    
+                
                     // Use location.replace to ensure a clean redirect
                     const url = new URL(window.location);
                     url.searchParams.set('tenant_id', authData.tenant_id);
                     url.searchParams.set('access_token', authData.access_token);
                     url.searchParams.delete('api_key');
-
+                
                     window.location.replace(url.toString());
-
+                
                 } catch (error) {
                     alert('Login failed: ' + error.message);
                 }
             });
         } else {
             // This block only runs if the accessToken exists
-
+        
             // --- ADD A SMALL DELAY BEFORE THE FIRST FETCH ---
             setTimeout(fetchReport, 500); // Wait 500ms before fetching the report
-
+        
             async function fetchReport() {
                 try {
                     const response = await fetch('/api/v1/report/attribution?days=30', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${accessToken}` // <-- CORRECTED
+                            'Authorization': `Bearer ${accessToken}`
                         }
                     });
-
+                
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`); // <-- CORRECTED
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                     }
-
+                
                     const report = await response.json();
                     displayReport(report);
-
+                
                 } catch (error) {
                     console.error('Failed to fetch report:', error);
-                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`; // <-- CORRECTED
+                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
                 }
             }
-
+        
             function displayReport(report) {
                 let html = `
                     <p>Total Page Views: <strong>${report.total_page_views}</strong></p>
@@ -143,21 +143,21 @@
                 report.channels.forEach(channel => {
                     html += `
                         <tr>
-                            <td>\${channel.channel}</td>
-                            <td>\${channel.page_views}</td>
-                            <td>\${channel.conversions}</td>
-                            <td>$\${channel.value.toFixed(2)}</td>
-                            <td>\${channel.percentage}%</td>
+                            <td>${channel.channel}</td>
+                            <td>${channel.page_views}</td>
+                            <td>${channel.conversions}</td>
+                            <td>$${channel.value.toFixed(2)}</td>
+                            <td>${channel.percentage}%</td>
                         </tr>
                     `;
                 });
                 html += `</table>`;
                 document.getElementById('reportData').innerHTML = html;
-
+            
                 renderChannelChart(report);
                 renderRevenueChart(report);
             }
-
+        
             function renderChannelChart(report) {
                 // Destroy the old chart instance if it exists
                 if (channelChartInstance) {
@@ -173,7 +173,7 @@
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
                 });
             }
-
+        
             function renderRevenueChart(report) {
                 // Destroy the old chart instance if it exists
                 if (revenueChartInstance) {
@@ -189,7 +189,7 @@
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
                 });
             }
-
+        
             // Refresh the report every 30 seconds
             setInterval(fetchReport, 30000);
         }
