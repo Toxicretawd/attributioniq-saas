@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token, decode_token
@@ -220,7 +220,7 @@ def serve_tracker():
 @app.route('/dashboard')
 def dashboard():
     """Serves the dashboard UI."""
-    return send_file('dashboard.html')
+    return render_template('dashboard.html')
 
 # --- Temporary Debug Route (Remove in production) ---
 @app.route('/debug/report', methods=['GET'])
