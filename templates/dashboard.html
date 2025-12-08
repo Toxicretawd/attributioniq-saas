@@ -113,13 +113,13 @@
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer \${accessToken}` // <-- CORRECTED
+                            'Authorization': `Bearer ${accessToken}` // <-- CORRECTED
                         }
                     });
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: \${response.status}`); // <-- CORRECTED
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`); // <-- CORRECTED
                     }
 
                     const report = await response.json();
@@ -127,15 +127,15 @@
 
                 } catch (error) {
                     console.error('Failed to fetch report:', error);
-                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: \${error.message}</p>`; // <-- CORRECTED
+                    document.getElementById('reportData').innerHTML = `<p style="color: red">Error: ${error.message}</p>`; // <-- CORRECTED
                 }
             }
 
             function displayReport(report) {
                 let html = `
-                    <p>Total Page Views: <strong>\${report.total_page_views}</strong></p>
-                    <p>Total Conversions: <strong>\${report.total_conversions}</strong></p>
-                    <p>Total Revenue: <strong>$\${report.total_value.toFixed(2)}</strong></p>
+                    <p>Total Page Views: <strong>${report.total_page_views}</strong></p>
+                    <p>Total Conversions: <strong>${report.total_conversions}</strong></p>
+                    <p>Total Revenue: <strong>$${report.total_value.toFixed(2)}</strong></p>
                     <h3>Channel Breakdown</h3>
                     <table>
                         <tr><th>Channel</th><th>Page Views</th><th>Conversions</th><th>Revenue</th><th>% of Total</th></tr>
