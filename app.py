@@ -187,7 +187,7 @@ def get_attribution_report():
     total_value = sum(c.conversion_value for c in conversions)
     report = {
         "period": f"last {days} days",
-        "total_page_views": len(page_views),
+        "total_page_views": len(all_events),
         "total_conversions": len(conversions),
         "total_value": total_value,
         "channels": []
