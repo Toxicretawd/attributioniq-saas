@@ -177,7 +177,7 @@ def get_attribution_report():
         channel = event.channel
         if channel not in channel_stats:
             channel_stats[channel] = {'page_views': 0, 'conversions': 0, 'value': 0}
-        
+
         channel_stats[channel]['page_views'] += 1
         if event.is_conversion:
             channel_stats[channel]['conversions'] += 1
